@@ -1,0 +1,10 @@
+# 기본: 모든 텍스트는 LF로 통일
+* text=auto eol=lf
+
+# Windows 전용 스크립트
+*.cmd text eol=crlf
+*.bat text eol=crlf
+
+# Maven wrapper
+/mvnw text eol=lf
+/mvnw.cmd text eol=crlf
