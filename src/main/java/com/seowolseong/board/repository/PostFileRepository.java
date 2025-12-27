@@ -1,22 +1,63 @@
 package com.seowolseong.board.repository;
 
+import com.seowolseong.board.domain.FileStatus;
 import com.seowolseong.board.domain.PostFile;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
 
 import java.util.Collection;
 import java.util.List;
 
 public interface PostFileRepository extends JpaRepository<PostFile, Long> {
 
-    // 특정 게시글에 파일이 하나라도 있는지 (목록에서 "첨부 있음" 표시용)
+    /* ---------- Exists ---------- */
     boolean existsByPostId(Long postId);
+    boolean existsByPostIdAndDeletedAtIsNull(Long postId);
 
-    // 게시글 상세에서 첨부파일 리스트 조회
+    /* ---------- Find (single post) ---------- */
     List<PostFile> findByPostIdOrderByIdAsc(Long postId);
+    List<PostFile> findByPostIdAndDeletedAtIsNullOrderByIdAsc(Long postId);
+    List<PostFile> findByPostIdAndDeletedAtIsNullOrderByIdDesc(Long postId);
+    List<PostFile> findByPostIdAndStatusAndDeletedAtIsNull(Long postId, FileStatus status);
 
-    // 여러 게시글(목록 50개 등)에 대한 파일 존재 여부를 한 번에 처리할 때 유용
+    /* ---------- Find (multiple posts) ---------- */
     List<PostFile> findByPostIdIn(Collection<Long> postIds);
+    List<PostFile> findByPostIdInAndDeletedAtIsNull(Collection<Long> postIds);
 
-    // (선택) 게시글 삭제/정리 시 함께 지우거나 소프트삭제 처리할 때 유용
+    /* ---------- Delete ---------- */
     long deleteByPostId(Long postId);
+
+    /* ---------- Soft delete ---------- */
+
+    /* ---------- Soft delete ---------- */
+
+    /**
+     * 파일 삭제 (status=DELETED, deletedAt 설정)
+     */
+    @Modifying
+    @Query("""
+        update PostFile f
+           set f.status = com.seowolseong.board.domain.FileStatus.DELETED,
+               f.deletedAt = CURRENT_TIMESTAMP,
+               f.updatedAt = CURRENT_TIMESTAMP
+         where f.id = :fileId
+           and f.deletedAt is null
+    """)
+    int softDeleteById(Long fileId);
+
+    /**
+     * 게시글 파일 전체 삭제 (status=DELETED, deletedAt 설정)
+     */
+    @Modifying
+    @Query("""
+        update PostFile f
+           set f.status = com.seowolseong.board.domain.FileStatus.DELETED,
+               f.deletedAt = CURRENT_TIMESTAMP,
+               f.updatedAt = CURRENT_TIMESTAMP
+         where f.postId = :postId
+           and f.deletedAt is null
+    """)
+    int softDeleteByPostId(Long postId);
+
 }
