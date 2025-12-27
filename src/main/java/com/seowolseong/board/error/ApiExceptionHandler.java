@@ -14,20 +14,32 @@ import jakarta.servlet.http.HttpServletRequest;
 @RestControllerAdvice
 public class ApiExceptionHandler {
 
-    /**
-     * ApiException 처리
-     */
-    @ExceptionHandler(ApiException.class)
-    public ResponseEntity<?> handle(ApiException e, HttpServletRequest req) {
-        ErrorCode c = e.getCode();
+  
+	    @ExceptionHandler(ApiException.class)
+	    public ResponseEntity<?> handle(ApiException e, HttpServletRequest req) {
+	        ErrorCode c = e.getCode();
+	        return ResponseEntity.status(c.status()).body(Map.of(
+	                "status", c.status(),
+	                "code", c.name(),
+	                "message", e.getMessage(),      // 기본/상세 메시지
+	                "path", req.getRequestURI()
+	        ));
+	    }
 
-        return ResponseEntity
-                .status(c.status())
-                .body(Map.of(
-                        "status", c.status(),
-                        "code", c.name(),
-                        "message", e.getMessage(),
-                        "path", req.getRequestURI()
-                ));
-    }
-}
+	    @ExceptionHandler(Exception.class)
+	    public ResponseEntity<?> handleEtc(Exception e, HttpServletRequest req) {
+	        ErrorCode c = ErrorCode.INTERNAL_ERROR;
+
+
+	        e.printStackTrace();
+
+	        return ResponseEntity.status(c.status()).body(Map.of(
+	                "status", c.status(),
+	                "code", c.name(),
+	                "message", c.defaultMessage(),
+	                "path", req.getRequestURI()
+	        ));
+	    }
+	}
+
+
