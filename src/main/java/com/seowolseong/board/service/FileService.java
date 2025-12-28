@@ -46,6 +46,9 @@ public class FileService {
             "application/pdf"
     );
 
+    private static final int MAX_FILE_COUNT = 3;
+    private static final long MAX_TOTAL_BYTES = 60L * 1024 * 1024;
+
     public FileService(
             PostFileRepository postFileRepository,
             S3Client s3Client,
@@ -76,10 +79,32 @@ public class FileService {
             throw new ApiException(ErrorCode.POST_NOT_FOUND);
         }
 
+        // 프론트 정책과 동일: null/empty 제외 후 개수/총합 제한 적용
+        List<MultipartFile> validFiles = new ArrayList<>();
+        for (MultipartFile f : files) {
+            if (f == null || f.isEmpty()) continue;
+            validFiles.add(f);
+        }
+
+        if (validFiles.isEmpty()) {
+            throw new ApiException(ErrorCode.FILE_UPLOAD_EMPTY);
+        }
+
+        if (validFiles.size() > MAX_FILE_COUNT) {
+            throw new ApiException(ErrorCode.REQUIRED_FIELD_MISSING, "첨부파일은 최대 " + MAX_FILE_COUNT + "개까지 가능합니다.");
+        }
+
+        long totalSize = 0;
+        for (MultipartFile f : validFiles) {
+            totalSize += f.getSize();
+        }
+        if (totalSize > MAX_TOTAL_BYTES) {
+            throw new ApiException(ErrorCode.REQUIRED_FIELD_MISSING, "첨부파일 전체 용량은 60MB를 초과할 수 없습니다.");
+        }
+
         List<Long> ids = new ArrayList<>();
 
-        for (MultipartFile file : files) {
-            if (file == null || file.isEmpty()) continue;
+        for (MultipartFile file : validFiles) {
 
             // 파일 메타데이터 구성
             String originalName = sanitizeFilename(file.getOriginalFilename());
