@@ -59,6 +59,7 @@ public enum ErrorCode {
     LOCAL_FILE_NOT_FOUND(404, "로컬 파일이 없습니다."),
 
     /* ---------- Auth / Access ---------- */
+    AUTH_LOGIN_FAILED(401, "아이디 또는 비밀번호가 올바르지 않습니다."),
     UNAUTHORIZED(401, "인증이 필요합니다."),
     FORBIDDEN(403, "접근 권한이 없습니다."),
 

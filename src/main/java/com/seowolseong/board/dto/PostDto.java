@@ -50,4 +50,11 @@ public record PostDto(
             String content,
             String postPassword
     ) {}
+    
+    public record AuthUser(
+    	    Long id,
+    	    String username,
+    	    String role
+    	) {}
+
 }

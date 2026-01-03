@@ -45,21 +45,10 @@
 
 	<dependencies>
 		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-webmvc</artifactId>
-		</dependency>
-
-		
-		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
 			<optional>true</optional>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-webmvc-test</artifactId>
-			<scope>test</scope>
-		</dependency>
+		</dependency>	
 		
 		<!-- 웹 API -->
     <dependency>
@@ -80,12 +69,6 @@
         <scope>runtime</scope>
     </dependency>
 
-    <!-- 비밀번호 해시용 (Security 전체 말고 이거만 써도 OK) -->
-    <dependency>
-        <groupId>org.springframework.security</groupId>
-        <artifactId>spring-security-crypto</artifactId>
-    </dependency>
-    
      <dependency>
       <groupId>software.amazon.awssdk</groupId>
       <artifactId>s3</artifactId>
@@ -95,6 +78,12 @@
       <groupId>software.amazon.awssdk</groupId>
       <artifactId>auth</artifactId>
     </dependency>
+    
+    <dependency>
+	  <groupId>org.springframework.boot</groupId>
+	  <artifactId>spring-boot-starter-security</artifactId>
+	</dependency>
+
      
 	</dependencies>
 
