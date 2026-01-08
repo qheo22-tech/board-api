@@ -12,6 +12,7 @@ public record PostDto(
         String content,
         OffsetDateTime createdAt,
         OffsetDateTime updatedAt,
+        OffsetDateTime deletedAt,
         boolean hasFiles,
         List<FileItem> files
 ) {
@@ -50,11 +51,20 @@ public record PostDto(
             String content,
             String postPassword
     ) {}
-    
-    public record AuthUser(
-    	    Long id,
-    	    String username,
-    	    String role
-    	) {}
 
+    /**
+     * 삭제/복구 요청 (관리자)
+     */
+    public record PostDeleteToggleRequest(
+            boolean deleted
+    ) {}
+
+    /**
+     * 인증 사용자 정보
+     */
+    public record AuthUser(
+            Long id,
+            String username,
+            String role
+    ) {}
 }

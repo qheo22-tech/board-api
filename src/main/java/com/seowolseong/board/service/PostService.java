@@ -57,10 +57,10 @@ public class PostService {
     }
 
     /**
-     * 게시글 목록 조회
+     * 게시글 목록 조회 (일반 사용자)
      */
     @Transactional(readOnly = true)
-    public List<PostDto> list() {
+    public List<PostDto> listVisible() {
         return postRepository
                 .findTop50ByDeletedAtIsNullOrderByCreatedAtDescIdDesc()
                 .stream()
@@ -70,6 +70,7 @@ public class PostService {
                         null,
                         p.getCreatedAt(),
                         null,
+                        p.getDeletedAt(),
                         postFileRepository.existsByPostIdAndDeletedAtIsNull(p.getId()),
                         null
                 ))
@@ -77,11 +78,32 @@ public class PostService {
     }
 
     /**
-     * 게시글 상세 조회
+     * 게시글 목록 조회 (관리자)
+     */
+    @Transactional(readOnly = true)
+    public List<PostDto> listAllForAdmin() {
+        return postRepository
+                .findTop50ByOrderByCreatedAtDescIdDesc()
+                .stream()
+                .map(p -> new PostDto(
+                        p.getId(),
+                        p.getTitle(),
+                        null,
+                        p.getCreatedAt(),
+                        null,
+                        p.getDeletedAt(),
+                        postFileRepository.existsByPostIdAndDeletedAtIsNull(p.getId()),
+                        null
+                ))
+                .toList();
+    }
+
+    /**
+     * 게시글 상세 조회 (일반 사용자)
      */
     @Transactional(readOnly = true)
     public PostDto detail(Long id) {
-        Post p = findActivePostOrThrow(id);
+        Post p = findVisiblePostOrThrow(id);
 
         var files = postFileRepository
                 .findByPostIdAndStatusAndDeletedAtIsNull(id, FileStatus.READY)
@@ -100,20 +122,84 @@ public class PostService {
                 p.getContent(),
                 p.getCreatedAt(),
                 p.getUpdatedAt(),
+                p.getDeletedAt(),
                 !files.isEmpty(),
                 files
         );
     }
 
     /**
-     * 게시글 삭제 (soft delete)
+     * 게시글 상세 조회 (관리자)
+     */
+    @Transactional(readOnly = true)
+    public PostDto detail(Long id, boolean admin) {
+        Post p = postRepository.findById(id)
+                .orElseThrow(() -> new ApiException(ErrorCode.POST_NOT_FOUND));
+
+        if (!admin && p.getDeletedAt() != null) {
+            throw new ApiException(ErrorCode.POST_NOT_FOUND);
+        }
+
+        var files = postFileRepository
+                .findByPostIdAndStatusAndDeletedAtIsNull(id, FileStatus.READY)
+                .stream()
+                .map(f -> new PostDto.FileItem(
+                        f.getId(),
+                        f.getOriginalName(),
+                        f.getSizeBytes(),
+                        f.getContentType()
+                ))
+                .toList();
+
+        return new PostDto(
+                p.getId(),
+                p.getTitle(),
+                p.getContent(),
+                p.getCreatedAt(),
+                p.getUpdatedAt(),
+                p.getDeletedAt(),
+                !files.isEmpty(),
+                files
+        );
+    }
+
+    /**
+     * 게시글 삭제 (비밀번호 필요)
      */
     @Transactional
     public void deletePost(Long id, String postPassword) {
-        Post p = findActivePostOrThrow(id);
+        Post p = findVisiblePostOrThrow(id);
         verifyPasswordOrThrow(p, postPassword);
 
         p.setDeletedAt(OffsetDateTime.now());
+    }
+
+    /**
+     * 게시글 삭제/복구 (관리자)
+     */
+    @Transactional
+    public PostDto setDeleted(Long id, boolean deleted) {
+        Post p = postRepository.findById(id)
+                .orElseThrow(() -> new ApiException(ErrorCode.POST_NOT_FOUND));
+
+        if (deleted) {
+            if (p.getDeletedAt() == null) {
+                p.setDeletedAt(OffsetDateTime.now());
+            }
+        } else {
+            p.setDeletedAt(null);
+        }
+
+        return new PostDto(
+                p.getId(),
+                p.getTitle(),
+                null,
+                p.getCreatedAt(),
+                p.getUpdatedAt(),
+                p.getDeletedAt(),
+                postFileRepository.existsByPostIdAndDeletedAtIsNull(p.getId()),
+                null
+        );
     }
 
     /**
@@ -121,7 +207,7 @@ public class PostService {
      */
     @Transactional
     public void updatePost(Long id, String title, String content, String postPassword) {
-        Post p = findActivePostOrThrow(id);
+        Post p = findVisiblePostOrThrow(id);
         verifyPasswordOrThrow(p, postPassword);
 
         if (title == null || title.isBlank()) {
@@ -140,19 +226,19 @@ public class PostService {
      */
     @Transactional(readOnly = true)
     public void verifyPasswordOrThrow(Long id, String postPassword) {
-        Post p = findActivePostOrThrow(id);
+        Post p = findVisiblePostOrThrow(id);
         verifyPasswordOrThrow(p, postPassword);
     }
 
     /**
      * 삭제되지 않은 게시글 조회
      */
-    private Post findActivePostOrThrow(Long id) {
+    private Post findVisiblePostOrThrow(Long id) {
         Post p = postRepository.findById(id)
                 .orElseThrow(() -> new ApiException(ErrorCode.POST_NOT_FOUND));
 
         if (p.getDeletedAt() != null) {
-            throw new ApiException(ErrorCode.POST_ALREADY_DELETED);
+            throw new ApiException(ErrorCode.POST_NOT_FOUND);
         }
         return p;
     }

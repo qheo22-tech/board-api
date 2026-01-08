@@ -64,7 +64,8 @@ public class Post {
         this.updatedAt = OffsetDateTime.now();
     }
 
-    // getters/setters
+    // getters / setters
+
     public Long getId() { return id; }
 
     public String getTitle() { return title; }

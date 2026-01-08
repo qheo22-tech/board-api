@@ -1,10 +1,14 @@
 package com.seowolseong.board.api;
 
+import com.seowolseong.board.common.SessionKeys;
 import com.seowolseong.board.dto.PostDto;
 import com.seowolseong.board.dto.PostDto.PostCreateRequest;
+import com.seowolseong.board.dto.PostDto.PostDeleteToggleRequest;
 import com.seowolseong.board.dto.PostDto.PostPasswordRequest;
 import com.seowolseong.board.dto.PostDto.PostUpdateRequest;
 import com.seowolseong.board.service.PostService;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,13 +28,24 @@ public class PostController {
         this.postService = postService;
     }
 
+    private boolean isAdmin(HttpServletRequest request) {
+        HttpSession session = request.getSession(false);
+        if (session == null) return false;
+
+        String role = (String) session.getAttribute(SessionKeys.ROLE);
+        return "ADMIN".equals(role);
+    }
+
     /**
      * 게시글 목록 조회
      * GET /api/posts
      */
     @GetMapping
-    public List<PostDto> list() {
-        return postService.list();
+    public List<PostDto> list(HttpServletRequest request) {
+        if (isAdmin(request)) {
+            return postService.listAllForAdmin();
+        }
+        return postService.listVisible();
     }
 
     /**
@@ -38,8 +53,8 @@ public class PostController {
      * GET /api/posts/{id}
      */
     @GetMapping("/{id}")
-    public PostDto detail(@PathVariable Long id) {
-        return postService.detail(id);
+    public PostDto detail(@PathVariable Long id, HttpServletRequest request) {
+        return postService.detail(id, isAdmin(request));
     }
 
     /**
@@ -66,7 +81,7 @@ public class PostController {
     }
 
     /**
-     * 게시글 삭제 (soft delete)
+     * 게시글 삭제 (soft delete, 비밀번호 필요)
      * POST /api/posts/{id}/delete
      */
     @PostMapping("/{id}/delete")
@@ -76,6 +91,23 @@ public class PostController {
     ) {
         postService.deletePost(id, req.postPassword());
         return ResponseEntity.ok(Map.of("ok", true));
+    }
+
+    /**
+     * 게시글 삭제/복구 (관리자)
+     * PATCH /api/posts/{id}/deleted
+     */
+    @PatchMapping("/{id}/deleted")
+    public ResponseEntity<PostDto> setDeleted(
+            @PathVariable Long id,
+            @RequestBody PostDeleteToggleRequest req,
+            HttpServletRequest request
+    ) {
+        if (!isAdmin(request)) {
+            return ResponseEntity.status(401).build();
+        }
+        PostDto updated = postService.setDeleted(id, req.deleted());
+        return ResponseEntity.ok(updated);
     }
 
     /**
