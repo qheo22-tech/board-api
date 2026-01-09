@@ -10,7 +10,7 @@ RUN chmod +x mvnw && ./mvnw -DskipTests dependency:go-offline
 
 # 소스 복사 후 패키징
 COPY src src
-RUN ./mvnw -DskipTests package
+RUN ./mvnw -Dmaven.test.skip=true package
 
 # 2) run stage
 FROM eclipse-temurin:17-jre
