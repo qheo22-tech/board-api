@@ -63,3 +63,9 @@ out/
 ### Eclipse additional ###
 bin/
 
+### Secrets / local configs ###
+.env
+**/application-local.yml
+**/application-local.properties
+application.yml
+src/main/java/temp/
